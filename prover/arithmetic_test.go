@@ -22,7 +22,8 @@ func randBI() *big.Int {
 
 func BenchmarkArithmetic(b *testing.B) {
 	// generate arrays with bigint
-	var p, q []*big.Int
+	p := make([]*big.Int, 0)
+	q := make([]*big.Int, 0)
 	for i := 0; i < 1000; i++ {
 		pi := randBI()
 		p = append(p, pi)

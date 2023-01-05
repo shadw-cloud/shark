@@ -17,7 +17,7 @@ const (
 )
 
 func randomBigIntArray(n int) []*big.Int {
-	var p []*big.Int
+	p := make([]*big.Int, 0, n)
 	for i := 0; i < n; i++ {
 		pi := randBI()
 		p = append(p, pi)

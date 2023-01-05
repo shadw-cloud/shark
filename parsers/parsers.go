@@ -1,15 +1,12 @@
 package parsers
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,7 +15,12 @@ import (
 	"github.com/taubyte/go-snark/types"
 )
 
+//go:generate go install github.com/mailru/easyjson/...@latest
+//go:generate easyjson -omit_empty ${GOFILE}
+
 // PkString is the equivalent to the Pk struct in string representation, containing the ProvingKey
+//
+//easyjson:json
 type PkString struct {
 	A          [][]string          `json:"A"`
 	B2         [][][]string        `json:"B2"`
@@ -38,9 +40,19 @@ type PkString struct {
 }
 
 // WitnessString contains the Witness in string representation
+//
+//easyjson:json
 type WitnessString []string
 
+//easyjson:json
+type PublicSignals []string
+
+//easyjson:json
+type StringSlice []string
+
 // ProofString is the equivalent to the Proof struct in string representation
+//
+//easyjson:json
 type ProofString struct {
 	A        []string   `json:"pi_a"`
 	B        [][]string `json:"pi_b"`
@@ -49,6 +61,8 @@ type ProofString struct {
 }
 
 // VkString is the Verification Key data structure in string format (from json)
+//
+//easyjson:json
 type VkString struct {
 	Alpha []string   `json:"vk_alpha_1"`
 	Beta  [][]string `json:"vk_beta_2"`
@@ -59,8 +73,8 @@ type VkString struct {
 
 // ParseWitness parses the json []byte data into the Witness struct
 func ParseWitness(wJSON []byte) (types.Witness, error) {
-	var ws WitnessString
-	err := json.Unmarshal(wJSON, &ws)
+	var ws = make(WitnessString, 0)
+	err := ws.UnmarshalJSON(wJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +92,8 @@ func ParseWitness(wJSON []byte) (types.Witness, error) {
 
 // ParsePk parses the json []byte data into the Pk struct
 func ParsePk(pkJSON []byte) (*types.Pk, error) {
-	var pkStr PkString
-	err := json.Unmarshal(pkJSON, &pkStr)
+	pkStr := &PkString{}
+	err := pkStr.UnmarshalJSON(pkJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +101,7 @@ func ParsePk(pkJSON []byte) (*types.Pk, error) {
 	return pk, err
 }
 
-func pkStringToPk(ps PkString) (*types.Pk, error) {
+func pkStringToPk(ps *PkString) (*types.Pk, error) {
 	var p types.Pk
 	var err error
 
@@ -153,7 +167,7 @@ func pkStringToPk(ps PkString) (*types.Pk, error) {
 	return &p, nil
 }
 
-func proofStringToProof(pr ProofString) (*types.Proof, error) {
+func proofStringToProof(pr *ProofString) (*types.Proof, error) {
 	var p types.Proof
 	var err error
 	p.A, err = stringToG1(pr.A)
@@ -176,8 +190,8 @@ func proofStringToProof(pr ProofString) (*types.Proof, error) {
 
 // ParseProof takes a json []byte and outputs the *Proof struct
 func ParseProof(pj []byte) (*types.Proof, error) {
-	var pr ProofString
-	err := json.Unmarshal(pj, &pr)
+	pr := &ProofString{}
+	err := pr.UnmarshalJSON(pj)
 	if err != nil {
 		return nil, err
 	}
@@ -187,12 +201,12 @@ func ParseProof(pj []byte) (*types.Proof, error) {
 
 // ParsePublicSignals takes a json []byte and outputs the []*big.Int struct
 func ParsePublicSignals(pj []byte) ([]*big.Int, error) {
-	var pr []string
-	err := json.Unmarshal(pj, &pr)
+	var pr = make(PublicSignals, 0)
+	err := pr.UnmarshalJSON(pj)
 	if err != nil {
 		return nil, err
 	}
-	var public []*big.Int
+	public := make([]*big.Int, 0, len(pr))
 	for _, s := range pr {
 		sb, err := stringToBigInt(s)
 		if err != nil {
@@ -205,8 +219,8 @@ func ParsePublicSignals(pj []byte) ([]*big.Int, error) {
 
 // ParseVk takes a json []byte and outputs the *Vk struct
 func ParseVk(vj []byte) (*types.Vk, error) {
-	var vr VkString
-	err := json.Unmarshal(vj, &vr)
+	vr := &VkString{}
+	err := vr.UnmarshalJSON(vj)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +228,7 @@ func ParseVk(vj []byte) (*types.Vk, error) {
 	return v, err
 }
 
-func vkStringToVk(vr VkString) (*types.Vk, error) {
+func vkStringToVk(vr *VkString) (*types.Vk, error) {
 	var v types.Vk
 	var err error
 	v.Alpha, err = stringToG1(vr.Alpha)
@@ -250,16 +264,15 @@ func vkStringToVk(vr VkString) (*types.Vk, error) {
 
 // polsStringToBigInt is for taking string polynomials and converting it to *big.Int polynomials
 func polsStringToBigInt(s []map[string]string) ([]map[int]*big.Int, error) {
-	var o []map[int]*big.Int
+	o := make([]map[int]*big.Int, 0, len(s))
 	for i := 0; i < len(s); i++ {
-		// var oi map[int]*big.Int
 		oi := make(map[int]*big.Int)
 		for j, v := range s[i] {
 			si, err := stringToBigInt(v)
 			if err != nil {
 				return o, err
 			}
-			// oi = append(oi, si)
+
 			jInt, err := strconv.Atoi(j)
 			if err != nil {
 				return o, err
@@ -272,8 +285,8 @@ func polsStringToBigInt(s []map[string]string) ([]map[int]*big.Int, error) {
 }
 
 // ArrayBigIntToString converts an []*big.Int into []string, used to output the Public Signals
-func ArrayBigIntToString(bi []*big.Int) []string {
-	var s []string
+func ArrayBigIntToString(bi []*big.Int) StringSlice {
+	s := make(StringSlice, 0, len(bi))
 	for i := 0; i < len(bi); i++ {
 		s = append(s, bi[i].String())
 	}
@@ -282,7 +295,7 @@ func ArrayBigIntToString(bi []*big.Int) []string {
 
 //nolint:unused,deadcode // TODO check
 func arrayStringToBigInt(s []string) ([]*big.Int, error) {
-	var o []*big.Int
+	o := make([]*big.Int, 0, len(s))
 	for i := 0; i < len(s); i++ {
 		si, err := stringToBigInt(s[i])
 		if err != nil {
@@ -315,7 +328,7 @@ func addPadding32(b []byte) []byte {
 
 func addZPadding(b []byte) []byte {
 	var z [32]byte
-	var r []byte
+	r := make([]byte, 0)
 	r = append(r, z[len(b):]...) // add padding on the left
 	r = append(r, b...)
 	return r[:32]
@@ -337,7 +350,7 @@ func stringToBytes(s string) ([]byte, error) {
 }
 
 func arrayStringToG1(h [][]string) ([]*bn256.G1, error) {
-	var o []*bn256.G1
+	o := make([]*bn256.G1, 0, len(h))
 	for i := 0; i < len(h); i++ {
 		hi, err := stringToG1(h[i])
 		if err != nil {
@@ -349,7 +362,7 @@ func arrayStringToG1(h [][]string) ([]*bn256.G1, error) {
 }
 
 func arrayStringToG2(h [][][]string) ([]*bn256.G2, error) {
-	var o []*bn256.G2
+	o := make([]*bn256.G2, 0, len(h))
 	for i := 0; i < len(h); i++ {
 		hi, err := stringToG2(h[i])
 		if err != nil {
@@ -474,7 +487,7 @@ func stringToG2(h [][]string) (*bn256.G2, error) {
 
 // ProofStringToSmartContractFormat converts the ProofString to a ProofString in
 // the SmartContract format in a ProofString structure
-func ProofStringToSmartContractFormat(s ProofString) ProofString {
+func ProofStringToSmartContractFormat(s *ProofString) *ProofString {
 	var rs ProofString
 	rs.A = make([]string, 2)
 	rs.B = make([][]string, 2)
@@ -491,18 +504,18 @@ func ProofStringToSmartContractFormat(s ProofString) ProofString {
 	rs.C[0] = s.C[0]
 	rs.C[1] = s.C[1]
 	rs.Protocol = s.Protocol
-	return rs
+	return &rs
 }
 
 // ProofToSmartContractFormat converts the *types.Proof to a ProofString in the
 // SmartContract format in a ProofString structure
-func ProofToSmartContractFormat(p *types.Proof) ProofString {
+func ProofToSmartContractFormat(p *types.Proof) *ProofString {
 	s := ProofToString(p)
 	return ProofStringToSmartContractFormat(s)
 }
 
 // ProofToString converts the Proof to ProofString
-func ProofToString(p *types.Proof) ProofString {
+func ProofToString(p *types.Proof) *ProofString {
 	var ps ProofString
 	ps.A = make([]string, 3)
 	ps.B = make([][]string, 3)
@@ -531,17 +544,17 @@ func ProofToString(p *types.Proof) ProofString {
 
 	ps.Protocol = "groth"
 
-	return ps
+	return &ps
 }
 
 // ProofToJSON outputs the Proof i JSON format
 func ProofToJSON(p *types.Proof) ([]byte, error) {
 	ps := ProofToString(p)
-	return json.Marshal(ps)
+	return ps.MarshalJSON()
 }
 
 // ProofToHex converts the Proof to ProofString with hexadecimal strings
-func ProofToHex(p *types.Proof) ProofString {
+func ProofToHex(p *types.Proof) *ProofString {
 	var ps ProofString
 	ps.A = make([]string, 3)
 	ps.B = make([][]string, 3)
@@ -570,19 +583,18 @@ func ProofToHex(p *types.Proof) ProofString {
 
 	ps.Protocol = "groth"
 
-	return ps
+	return &ps
 }
 
 // ProofToJSONHex outputs the Proof i JSON format with hexadecimal strings
 func ProofToJSONHex(p *types.Proof) ([]byte, error) {
 	ps := ProofToHex(p)
-	return json.Marshal(ps)
+	return ps.MarshalJSON()
 }
 
 // ParseWitnessBin parses binary file representation of the Witness into the Witness struct
-func ParseWitnessBin(f *os.File) (types.Witness, error) {
+func ParseWitnessBin(r io.Reader) (types.Witness, error) {
 	var w types.Witness
-	r := bufio.NewReader(f)
 	for {
 		b := make([]byte, 32)
 		n, err := r.Read(b)
@@ -620,10 +632,9 @@ func readNBytes(r io.Reader, n int) ([]byte, error) {
 // ProvingKey struct
 //
 //nolint:gocyclo // TODO WIP
-func ParsePkBin(f *os.File) (*types.Pk, error) {
+func ParsePkBin(r io.Reader) (*types.Pk, error) {
 	o := 0
 	var pk types.Pk
-	r := bufio.NewReader(f)
 
 	b, err := readNBytes(r, 12)
 	if err != nil {
@@ -879,7 +890,7 @@ func fromMont1Q(m []byte) []byte {
 		yBytes = addZPadding(yBytes)
 	}
 
-	var p []byte
+	p := make([]byte, 0)
 	p = append(p, xBytes...)
 	p = append(p, yBytes...)
 
@@ -928,7 +939,7 @@ func fromMont2Q(m []byte) []byte {
 		tBytes = addZPadding(tBytes)
 	}
 
-	var p []byte
+	p := make([]byte, 0)
 	p = append(p, yBytes...) // swap
 	p = append(p, xBytes...)
 	p = append(p, tBytes...)
@@ -957,7 +968,7 @@ func fromMont2R(m []byte) []byte {
 	z := coordFromMont(c, types.R)
 	t := coordFromMont(d, types.R)
 
-	var p []byte
+	p := make([]byte, 0)
 	p = append(p, y.Bytes()...) // swap
 	p = append(p, x.Bytes()...)
 	p = append(p, t.Bytes()...)
@@ -993,7 +1004,7 @@ func sortedKeys(m map[int]*big.Int) []int {
 // when parsing.
 // nolint:gomnd
 func PkToGoBin(pk *types.Pk) ([]byte, error) {
-	var r []byte
+	r := make([]byte, 0)
 	o := 0
 	var b [4]byte
 	binary.LittleEndian.PutUint32(b[:], uint32(pk.NVars))
@@ -1103,10 +1114,9 @@ func PkToGoBin(pk *types.Pk) ([]byte, error) {
 // that allows to go faster when parsing.
 //
 //nolint:gocyclo // TODO WIP
-func ParsePkGoBin(f *os.File) (*types.Pk, error) {
+func ParsePkGoBin(r io.Reader) (*types.Pk, error) {
 	o := 0
 	var pk types.Pk
-	r := bufio.NewReader(f)
 
 	b, err := readNBytes(r, 12)
 	if err != nil {

@@ -36,7 +36,7 @@ compile_and_ts_and_witness
 echo "compile & trustesetup for circuit5k"
 cd ../circuit5k
 compile_and_ts_and_witness
-# echo "compile & trustesetup for circuit10k"
+echo "compile & trustesetup for circuit10k"
 # cd ../circuit10k
 # compile_and_ts_and_witness
 # echo "compile & trustesetup for circuit20k"
@@ -65,7 +65,7 @@ go run ../cli/cli.go -convert -pk circuit5k/proving_key.json -pkbin circuit5k/pr
 # sed -i 's/alfa/alpha/g' circuit10k/verification_key.json # after wasmsnark finished using proving_key.bin
 # sed -i 's/alfa/alpha/g' circuit10k/proving_key.json # after wasmsnark finished using proving_key.bin
 # go run ../cli/cli.go -convert -pk circuit10k/proving_key.json -pkbin circuit10k/proving_key.go.bin
-# 
+
 # echo "convert witness & pk of circuit20k to bin & go bin"
 # node node_modules/wasmsnark/tools/buildwitness.js -i circuit20k/witness.json -o circuit20k/witness.bin
 # node node_modules/wasmsnark/tools/buildpkey.js -i circuit20k/proving_key.json -o circuit20k/proving_key.bin

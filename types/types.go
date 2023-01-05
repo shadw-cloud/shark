@@ -2,7 +2,6 @@ package types
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"math/big"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
@@ -23,6 +22,10 @@ type Proof struct {
 	C *bn256.G1
 }
 
+//go:generate go install github.com/mailru/easyjson/...@latest
+//go:generate easyjson -omit_empty ${GOFILE}
+
+//easyjson:json
 type proofAux struct {
 	A string `json:"pi_a"`
 	B string `json:"pi_b"`
@@ -31,17 +34,17 @@ type proofAux struct {
 
 // MarshalJSON implements the JSON marshaler for Proof type
 func (p Proof) MarshalJSON() ([]byte, error) {
-	var pa proofAux
+	pa := &proofAux{}
 	pa.A = hex.EncodeToString(p.A.Marshal())
 	pa.B = hex.EncodeToString(p.B.Marshal())
 	pa.C = hex.EncodeToString(p.C.Marshal())
-	return json.Marshal(pa)
+	return pa.MarshalJSON()
 }
 
 // UnmarshalJSON implements the JSON unmarshaler for Proof type
 func (p *Proof) UnmarshalJSON(data []byte) error {
-	var pa proofAux
-	if err := json.Unmarshal(data, &pa); err != nil {
+	pa := &proofAux{}
+	if err := pa.UnmarshalJSON(data); err != nil {
 		return err
 	}
 	aBytes, err := hex.DecodeString(pa.A)

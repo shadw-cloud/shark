@@ -40,7 +40,7 @@ func (roots rootsT) setRoots(n int) {
 	for i := n; i >= 0 && nil == roots.roots[i]; i-- { // TODO tmp i<=len(r)
 		r := ff.NewElement().SetBigInt(big.NewInt(1))
 		nroots := 1 << i
-		var rootsi []*ff.Element
+		rootsi := make([]*ff.Element, 0, nroots)
 		for j := 0; j < nroots; j++ {
 			rootsi = append(rootsi, r)
 			r = ff.NewElement().Mul(r, roots.w[i])
@@ -92,7 +92,7 @@ func ifft(p []*ff.Element) []*ff.Element {
 
 	twoinvm := ff.NewElement().SetBigInt(fInv(fMul(big.NewInt(1), big.NewInt(int64(m)))))
 
-	var resn []*ff.Element
+	resn := make([]*ff.Element, 0, m)
 	for i := 0; i < m; i++ {
 		resn = append(resn, ff.NewElement().Mul(res[(m-i)%m], twoinvm))
 	}

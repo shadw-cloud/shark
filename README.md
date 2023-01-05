@@ -1,4 +1,6 @@
-# go-snark [![GoDoc](https://godoc.org/github.com/taubyte/go-snark?status.svg)](https://godoc.org/github.com/taubyte/go-snark) [![Go Report Card](https://goreportcard.com/badge/github.com/taubyte/go-snark)](https://goreportcard.com/report/github.com/taubyte/go-snark) [![Test](https://github.com/taubyte/go-snark/workflows/Test/badge.svg)](https://github.com/taubyte/go-snark/actions?query=workflow%3ATest)
+# go-snark [![GoDoc](https://godoc.org/github.com/taubyte/go-snark?status.svg)](https://godoc.org/github.com/taubyte/go-snark) [![Go Report Card](https://goreportcard.com/badge/github.com/taubyte/go-snark)](https://goreportcard.com/report/github.com/taubyte/go-snark)
+
+Forked from ocdoni/go-snark. Optimized for TinyGo/WASI.
 
 Go implementation of the [Groth16 protocol](https://eprint.iacr.org/2016/260.pdf) zkSNARK prover & verifier compatible with:
 
