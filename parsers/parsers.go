@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
-	"github.com/vocdoni/go-snark/types"
+	"github.com/taubyte/go-snark/types"
 )
 
 // PkString is the equivalent to the Pk struct in string representation, containing the ProvingKey
@@ -618,6 +618,7 @@ func readNBytes(r io.Reader, n int) ([]byte, error) {
 
 // ParsePkBin parses binary file representation of the ProvingKey into the
 // ProvingKey struct
+//
 //nolint:gocyclo // TODO WIP
 func ParsePkBin(f *os.File) (*types.Pk, error) {
 	o := 0
@@ -1100,6 +1101,7 @@ func PkToGoBin(pk *types.Pk) ([]byte, error) {
 // ParsePkGoBin parses go-snark binary file representation of the ProvingKey
 // into ProvingKey struct (*types.Pk).  PkGoBin is a own go-snark binary format
 // that allows to go faster when parsing.
+//
 //nolint:gocyclo // TODO WIP
 func ParsePkGoBin(f *os.File) (*types.Pk, error) {
 	o := 0

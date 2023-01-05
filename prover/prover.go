@@ -5,11 +5,10 @@ import (
 	"math"
 	"math/big"
 	"runtime"
-	"sync"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 	"github.com/iden3/go-iden3-crypto/utils"
-	"github.com/vocdoni/go-snark/types"
+	"github.com/taubyte/go-snark/types"
 )
 
 // Group Size
@@ -51,37 +50,33 @@ func GenerateProof(pk *types.Pk, w types.Witness) (*types.Proof, []*big.Int, err
 	proofC := arrayOfZeroesG1(numcpu)
 	proofBG1 := arrayOfZeroesG1(numcpu)
 	gsize := gSize
-	var wg1 sync.WaitGroup
-	wg1.Add(numcpu)
-	for _cpu, _ranges := range ranges(pk.NVars, numcpu) {
+
+	for cpu, ranges := range ranges(pk.NVars, numcpu) {
 		// split 1
-		go func(cpu int, ranges [2]int) {
-			proofA[cpu] = scalarMultNoDoubleG1(pk.A[ranges[0]:ranges[1]],
-				w[ranges[0]:ranges[1]],
-				proofA[cpu],
+		proofA[cpu] = scalarMultNoDoubleG1(pk.A[ranges[0]:ranges[1]],
+			w[ranges[0]:ranges[1]],
+			proofA[cpu],
+			gsize)
+		proofB[cpu] = scalarMultNoDoubleG2(pk.B2[ranges[0]:ranges[1]],
+			w[ranges[0]:ranges[1]],
+			proofB[cpu],
+			gsize)
+		proofBG1[cpu] = scalarMultNoDoubleG1(pk.B1[ranges[0]:ranges[1]],
+			w[ranges[0]:ranges[1]],
+			proofBG1[cpu],
+			gsize)
+		minLim := pk.NPublic + 1
+		if ranges[0] > pk.NPublic+1 {
+			minLim = ranges[0]
+		}
+		if ranges[1] > pk.NPublic+1 {
+			proofC[cpu] = scalarMultNoDoubleG1(pk.C[minLim:ranges[1]],
+				w[minLim:ranges[1]],
+				proofC[cpu],
 				gsize)
-			proofB[cpu] = scalarMultNoDoubleG2(pk.B2[ranges[0]:ranges[1]],
-				w[ranges[0]:ranges[1]],
-				proofB[cpu],
-				gsize)
-			proofBG1[cpu] = scalarMultNoDoubleG1(pk.B1[ranges[0]:ranges[1]],
-				w[ranges[0]:ranges[1]],
-				proofBG1[cpu],
-				gsize)
-			minLim := pk.NPublic + 1
-			if ranges[0] > pk.NPublic+1 {
-				minLim = ranges[0]
-			}
-			if ranges[1] > pk.NPublic+1 {
-				proofC[cpu] = scalarMultNoDoubleG1(pk.C[minLim:ranges[1]],
-					w[minLim:ranges[1]],
-					proofC[cpu],
-					gsize)
-			}
-			wg1.Done()
-		}(_cpu, _ranges)
+		}
 	}
-	wg1.Wait()
+
 	// join 1
 	for cpu := 1; cpu < numcpu; cpu++ {
 		proofA[0].Add(proofA[0], proofA[cpu])
@@ -106,19 +101,15 @@ func GenerateProof(pk *types.Pk, w types.Witness) (*types.Proof, []*big.Int, err
 	proofBG1[0].Add(proofBG1[0], new(bn256.G1).ScalarMult(pk.VkDelta1, s))
 
 	proofC = arrayOfZeroesG1(numcpu)
-	var wg2 sync.WaitGroup
-	wg2.Add(numcpu)
-	for _cpu, _ranges := range ranges(len(h), numcpu) {
+
+	for cpu, ranges := range ranges(len(h), numcpu) {
 		// split 2
-		go func(cpu int, ranges [2]int) {
-			proofC[cpu] = scalarMultNoDoubleG1(pk.HExps[ranges[0]:ranges[1]],
-				h[ranges[0]:ranges[1]],
-				proofC[cpu],
-				gsize)
-			wg2.Done()
-		}(_cpu, _ranges)
+		proofC[cpu] = scalarMultNoDoubleG1(pk.HExps[ranges[0]:ranges[1]],
+			h[ranges[0]:ranges[1]],
+			proofC[cpu],
+			gsize)
 	}
-	wg2.Wait()
+
 	// join 2
 	for cpu := 1; cpu < numcpu; cpu++ {
 		proofC[0].Add(proofC[0], proofC[cpu])
@@ -142,25 +133,17 @@ func calculateH(pk *types.Pk, w types.Witness) []*big.Int {
 
 	numcpu := runtime.NumCPU()
 
-	var wg1 sync.WaitGroup
-	wg1.Add(2) //nolint:gomnd
-	go func() {
-		for i := 0; i < pk.NVars; i++ {
-			for j := range pk.PolsA[i] {
-				polAT[j] = fAdd(polAT[j], fMul(w[i], pk.PolsA[i][j]))
-			}
+	for i := 0; i < pk.NVars; i++ {
+		for j := range pk.PolsA[i] {
+			polAT[j] = fAdd(polAT[j], fMul(w[i], pk.PolsA[i][j]))
 		}
-		wg1.Done()
-	}()
-	go func() {
-		for i := 0; i < pk.NVars; i++ {
-			for j := range pk.PolsB[i] {
-				polBT[j] = fAdd(polBT[j], fMul(w[i], pk.PolsB[i][j]))
-			}
+	}
+	for i := 0; i < pk.NVars; i++ {
+		for j := range pk.PolsB[i] {
+			polBT[j] = fAdd(polBT[j], fMul(w[i], pk.PolsB[i][j]))
 		}
-		wg1.Done()
-	}()
-	wg1.Wait()
+	}
+
 	polATe := utils.BigIntArrayToElementArray(polAT)
 	polBTe := utils.BigIntArrayToElementArray(polBT)
 
@@ -171,35 +154,24 @@ func calculateH(pk *types.Pk, w types.Witness) []*big.Int {
 	roots := newRootsT()
 	roots.setRoots(r)
 
-	var wg2 sync.WaitGroup
-	wg2.Add(numcpu)
-	for _cpu, _ranges := range ranges(len(polASe), numcpu) {
-		go func(cpu int, ranges [2]int) {
-			for i := ranges[0]; i < ranges[1]; i++ {
-				polASe[i].Mul(polASe[i], roots.roots[r][i])
-				polBSe[i].Mul(polBSe[i], roots.roots[r][i])
-			}
-			wg2.Done()
-		}(_cpu, _ranges)
+	for _, ranges := range ranges(len(polASe), numcpu) {
+		for i := ranges[0]; i < ranges[1]; i++ {
+			polASe[i].Mul(polASe[i], roots.roots[r][i])
+			polBSe[i].Mul(polBSe[i], roots.roots[r][i])
+		}
 	}
-	wg2.Wait()
 
 	polATodd := fft(polASe)
 	polBTodd := fft(polBSe)
 
 	polABT := arrayOfZeroesE(len(polASe) * 2) //nolint:gomnd
-	var wg3 sync.WaitGroup
-	wg3.Add(numcpu)
-	for _cpu, _ranges := range ranges(len(polASe), numcpu) {
-		go func(cpu int, ranges [2]int) {
-			for i := ranges[0]; i < ranges[1]; i++ {
-				polABT[2*i].Mul(polATe[i], polBTe[i])
-				polABT[2*i+1].Mul(polATodd[i], polBTodd[i])
-			}
-			wg3.Done()
-		}(_cpu, _ranges)
+
+	for _, ranges := range ranges(len(polASe), numcpu) {
+		for i := ranges[0]; i < ranges[1]; i++ {
+			polABT[2*i].Mul(polATe[i], polBTe[i])
+			polABT[2*i+1].Mul(polATodd[i], polBTodd[i])
+		}
 	}
-	wg3.Wait()
 
 	hSeFull := ifft(polABT)
 

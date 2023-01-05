@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/iden3/go-iden3-crypto/ff"
-	"github.com/vocdoni/go-snark/types"
+	"github.com/taubyte/go-snark/types"
 )
 
 type rootsT struct {

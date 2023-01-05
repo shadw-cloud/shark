@@ -1,4 +1,4 @@
-# go-snark [![GoDoc](https://godoc.org/github.com/vocdoni/go-snark?status.svg)](https://godoc.org/github.com/vocdoni/go-snark) [![Go Report Card](https://goreportcard.com/badge/github.com/vocdoni/go-snark)](https://goreportcard.com/report/github.com/vocdoni/go-snark) [![Test](https://github.com/vocdoni/go-snark/workflows/Test/badge.svg)](https://github.com/vocdoni/go-snark/actions?query=workflow%3ATest)
+# go-snark [![GoDoc](https://godoc.org/github.com/taubyte/go-snark?status.svg)](https://godoc.org/github.com/taubyte/go-snark) [![Go Report Card](https://goreportcard.com/badge/github.com/taubyte/go-snark)](https://goreportcard.com/report/github.com/taubyte/go-snark) [![Test](https://github.com/taubyte/go-snark/workflows/Test/badge.svg)](https://github.com/taubyte/go-snark/actions?query=workflow%3ATest)
 
 Go implementation of the [Groth16 protocol](https://eprint.iacr.org/2016/260.pdf) zkSNARK prover & verifier compatible with:
 
@@ -14,9 +14,9 @@ Using [bn256](https://github.com/ethereum/go-ethereum/tree/master/crypto/bn256/c
 
 ```go
 import (
-  "github.com/vocdoni/go-snark/parsers"
-  "github.com/vocdoni/go-snark/prover"
-  "github.com/vocdoni/go-snark/verifier"
+  "github.com/taubyte/go-snark/parsers"
+  "github.com/taubyte/go-snark/prover"
+  "github.com/taubyte/go-snark/verifier"
 )
 
 [...]

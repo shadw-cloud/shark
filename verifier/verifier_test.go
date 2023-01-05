@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/vocdoni/go-snark/parsers"
+	"github.com/taubyte/go-snark/parsers"
 )
 
 func TestVerify(t *testing.T) {

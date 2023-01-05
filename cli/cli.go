@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/vocdoni/go-snark/parsers"
-	"github.com/vocdoni/go-snark/prover"
-	"github.com/vocdoni/go-snark/verifier"
+	"github.com/taubyte/go-snark/parsers"
+	"github.com/taubyte/go-snark/prover"
+	"github.com/taubyte/go-snark/verifier"
 )
 
 const version = "v0.0.1"

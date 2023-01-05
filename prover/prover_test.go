@@ -10,11 +10,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/vocdoni/go-snark/parsers"
-	"github.com/vocdoni/go-snark/verifier"
+	"github.com/taubyte/go-snark/parsers"
+	"github.com/taubyte/go-snark/verifier"
 )
 
 func TestCircuitsGenerateProof(t *testing.T) {
+	// t.Error(os.Getwd())
+	// return
 	testCircuitGenerateProof(t, "circuit1k") // 1000 constraints
 	testCircuitGenerateProof(t, "circuit5k") // 5000 constraints
 	// testCircuitGenerateProof(t, "circuit10k") // 10000 constraints
